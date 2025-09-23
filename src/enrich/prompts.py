@@ -26,8 +26,18 @@ PAPER_TEMPLATES: Dict[str, Dict[str, str]] = {
 
 DEFAULT_TEMPLATE = PAPER_TEMPLATES["topic"]
 
+ABSTRACT_TEMPLATE: Dict[str, str] = {
+    "prompt": """Convert this article title and abstract into structured JSON. Return ONLY valid JSON:\n{{\n  "summary": str,\n  "primary_topic": str,\n  "methodology": str,\n  "key_findings": [str, ...],\n  "tags": [str, ...]\n}}\n\nTitle: {title}\n\nAbstract:\n{abstract}\n\nJSON only:""",
+}
+
 
 def get_paper_template(paper_type: str) -> Dict[str, str]:
     """Return the prompt/output template pair for the given paper type."""
 
     return PAPER_TEMPLATES.get(paper_type, DEFAULT_TEMPLATE)
+
+
+def get_abstract_template() -> Dict[str, str]:
+    """Return the template for abstract summarisation.""" 
+
+    return ABSTRACT_TEMPLATE

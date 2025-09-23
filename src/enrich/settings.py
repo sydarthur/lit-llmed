@@ -24,8 +24,12 @@ class EnrichmentPaths:
     def debug_root(self) -> Path:
         return self.output_root / "debug"
 
+    @property
+    def abstracts_root(self) -> Path:
+        return self.output_root / "abstracts"
+
     def ensure(self) -> None:
-        for path in (self.input_root, self.notes_root, self.debug_root):
+        for path in (self.input_root, self.notes_root, self.debug_root, self.abstracts_root):
             path.mkdir(parents=True, exist_ok=True)
 
 

@@ -31,6 +31,7 @@ Modernized tooling for fetching, enriching, and exporting scholarly articles fro
 │  │  └─ crossref.py       # Crossref + OpenAlex + Unpaywall ingestion
 │  ├─ enrich/
 │  │  ├─ chunked_processor.py
+│  │  ├─ abstract_summarizer.py
 │  │  ├─ llm.py
 │  │  ├─ multi_folder_processor.py
 │  │  ├─ pdf_processor.py
@@ -91,6 +92,22 @@ python -m src.cli schedule --email you@example.com --interval-hours 12
 ```
 
 All logs are emitted as structured JSON for easy piping into observability tooling.
+
+## Abstract Summaries
+
+To transform stored article JSON into structured abstract summaries, use the `AbstractSummarizer` helper. It reads any list of article payloads (such as `output/data/*.json`) and writes enriched summaries to `output/enrich/abstracts/`:
+
+```bash
+python - <<'PY'
+from pathlib import Path
+from src.enrich.abstract_summarizer import AbstractSummarizer
+
+summarizer = AbstractSummarizer()
+summarizer.summarise_json_file(Path("output/data/all_journals_20240101.json"))
+PY
+```
+
+Each entry contains summary text, methodology, key findings, normalised tags, and copies of the journal metadata for downstream analytics.
 
 ## Tests
 
