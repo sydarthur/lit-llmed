@@ -1,0 +1,15 @@
+[paths]
+output_root = "output"
+
+[ingest]
+default_days_back = 30
+rate_limit_delay = 1.0
+max_workers = 5
+
+[zotero]
+auto_import = false
+collection_prefix = "Automation"
+
+[enrich]
+input_root = "pdfs_input"
+output_root = "output/enrich"
