@@ -5,7 +5,10 @@ Debug Zotero import by testing single article
 
 import json
 import requests
-from zotero_integration import clean_abstract_text
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils.ris_exporter import RISExporter
 
 def test_single_article_import(api_key, user_id, article):
     """Test importing a single article to debug issues."""
@@ -36,7 +39,8 @@ def test_single_article_import(api_key, user_id, article):
             })
     
     # Clean abstract
-    abstract = clean_abstract_text(article.get('abstract', ''))
+    ris_exporter = RISExporter()
+    abstract = ris_exporter.clean_abstract_text(article.get('abstract', ''))
     
     # Create minimal item first
     item = {

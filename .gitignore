@@ -74,3 +74,5 @@ htmlcov/
 .dmypy.json
 dmypy.json
 /lit-api/output
+/output
+lit-api/config/zotero_config.json

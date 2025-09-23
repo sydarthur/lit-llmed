@@ -87,46 +87,25 @@ class JournalConfigManager:
         """Create default journal configurations."""
         default_journals = [
             JournalConfig(
-                name="Nature",
-                issn="0028-0836",
-                publisher="Nature Publishing Group",
-                subject_area="Multidisciplinary Sciences",
-                zotero_collection="Nature Articles"
-            ),
-            JournalConfig(
-                name="Science",
-                issn="0036-8075",
-                publisher="American Association for the Advancement of Science",
-                subject_area="Multidisciplinary Sciences",
-                zotero_collection="Science Articles"
-            ),
-            JournalConfig(
-                name="Cell",
-                issn="0092-8674",
-                publisher="Elsevier",
-                subject_area="Cell Biology",
-                zotero_collection="Cell Biology Papers"
-            ),
-            JournalConfig(
-                name="The Lancet",
-                issn="0140-6736",
-                publisher="Elsevier",
-                subject_area="Medicine",
-                zotero_collection="Medical Research"
-            ),
-            JournalConfig(
-                name="NEJM",
-                issn="0028-4793",
-                publisher="Massachusetts Medical Society",
-                subject_area="Medicine",
-                zotero_collection="Medical Research"
-            ),
-            JournalConfig(
                 name="Journal of Business Logistics",
                 issn="0735-3766",
                 publisher="Wiley",
                 subject_area="Supply Chain Management",
-                zotero_collection="Supply Chain Research"
+                zotero_collection="Automation"
+            ),
+            JournalConfig(
+                name="Production and Operations Management",
+                issn="1059-1478",
+                publisher="Sage",
+                subject_area="Operations Management",
+                zotero_collection="Automation"
+            ),
+            JournalConfig(
+                name="Journal of Operations Management",
+                issn="0272-6963",
+                publisher="Wiley",
+                subject_area="Operations Management",
+                zotero_collection="Automation"
             )
         ]
         

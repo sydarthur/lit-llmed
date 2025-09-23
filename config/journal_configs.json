@@ -1,0 +1,41 @@
+{
+  "journals": [
+    {
+      "name": "Journal of Business Logistics",
+      "issn": "0735-3766",
+      "publisher": "Wiley",
+      "subject_area": "Supply Chain Management",
+      "zotero_collection": "Automation",
+      "fetch_abstracts": true,
+      "fetch_oa_links": true,
+      "max_articles_per_fetch": 50,
+      "days_back": 30,
+      "active": true
+    },
+    {
+      "name": "Production and Operations Management",
+      "issn": "1059-1478",
+      "publisher": "Sage",
+      "subject_area": "Operations Management",
+      "zotero_collection": "Automation",
+      "fetch_abstracts": true,
+      "fetch_oa_links": true,
+      "max_articles_per_fetch": 50,
+      "days_back": 30,
+      "active": true
+    },
+    {
+      "name": "Journal of Operations Management",
+      "issn": "0272-6963",
+      "publisher": "Wiley",
+      "subject_area": "Operations Management",
+      "zotero_collection": "Automation",
+      "fetch_abstracts": true,
+      "fetch_oa_links": true,
+      "max_articles_per_fetch": 50,
+      "days_back": 30,
+      "active": true
+    }
+  ],
+  "last_updated": "2025-09-22 22:11:13.458452"
+}
