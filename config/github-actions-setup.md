@@ -39,6 +39,7 @@ your-email@domain.com
    - Storage Admin
    - Artifact Registry Administrator
    - Artifact Registry Create on Push Admin
+   - BigQuery Admin
 4. Create and download JSON key
 5. Copy the entire JSON content to GitHub secret `GCP_SA_KEY`
 
@@ -50,6 +51,7 @@ Run these commands in Google Cloud Shell:
 gcloud services enable run.googleapis.com
 gcloud services enable containerregistry.googleapis.com
 gcloud services enable cloudbuild.googleapis.com
+gcloud services enable bigquery.googleapis.com
 ```
 
 ## Deployment Triggers

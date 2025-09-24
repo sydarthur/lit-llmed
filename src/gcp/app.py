@@ -13,6 +13,7 @@ sys.path.append('/app')
 from src.core.models import Journal, Article
 from src.gcp.gcs_storage import GCSStore
 from src.gcp.gcp_fetch import GCPCrossrefClient
+from src.gcp.bq_client import BigQueryClient
 
 app = Flask(__name__)
 
@@ -326,6 +327,205 @@ def list_storage_files():
         logger.error(f"Error listing storage files: {str(e)}")
         return jsonify({
             'error': 'Failed to list storage files',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/bigquery/setup', methods=['POST'])
+def setup_bigquery():
+    """Initialize BigQuery dataset and tables"""
+    try:
+        bq_client = BigQueryClient()
+        success = bq_client.create_tables()
+        
+        if success:
+            return jsonify({
+                'status': 'success',
+                'message': 'BigQuery tables created successfully',
+                'dataset': bq_client.dataset_id,
+                'project': bq_client.project_id
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Failed to create BigQuery tables'
+            }), 500
+            
+    except Exception as e:
+        logger.error(f"Error setting up BigQuery: {str(e)}")
+        return jsonify({
+            'error': 'Failed to setup BigQuery',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/bigquery/sync', methods=['POST'])
+def sync_to_bigquery():
+    """Sync all GCS files to BigQuery"""
+    try:
+        data = request.get_json() or {}
+        force_reprocess = data.get('force_reprocess', False)
+        folder = data.get('folder', 'data')
+        
+        # Get list of files to process
+        gcs_store = GCSStore()
+        files = gcs_store.list_files(folder)
+        
+        if not files:
+            return jsonify({
+                'status': 'success',
+                'message': 'No files to process',
+                'files_processed': 0
+            })
+        
+        # Initialize BigQuery client
+        bq_client = BigQueryClient()
+        bq_client.create_tables()  # Ensure tables exist
+        
+        results = []
+        total_articles = 0
+        
+        for file_path in files:
+            if file_path.endswith('.json'):
+                gcs_path = f"gs://{gcs_store.bucket_name}/{file_path}"
+                result = bq_client.process_gcs_file(gcs_path, force_reprocess)
+                results.append(result)
+                
+                if result['status'] == 'success':
+                    total_articles += result.get('articles_processed', 0)
+        
+        # Get summary stats
+        successful = len([r for r in results if r['status'] == 'success'])
+        failed = len([r for r in results if r['status'] == 'failed'])
+        skipped = len([r for r in results if r['status'] == 'skipped'])
+        
+        return jsonify({
+            'status': 'completed',
+            'summary': {
+                'total_files': len(results),
+                'successful': successful,
+                'failed': failed,
+                'skipped': skipped,
+                'total_articles_processed': total_articles
+            },
+            'results': results
+        })
+        
+    except Exception as e:
+        logger.error(f"Error syncing to BigQuery: {str(e)}")
+        return jsonify({
+            'error': 'Failed to sync to BigQuery',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/bigquery/sync/<path:file_path>', methods=['POST'])
+def sync_single_file(file_path: str):
+    """Sync a single GCS file to BigQuery"""
+    try:
+        data = request.get_json() or {}
+        force_reprocess = data.get('force_reprocess', False)
+        
+        # Construct full GCS path
+        gcs_store = GCSStore()
+        if not file_path.startswith('gs://'):
+            gcs_path = f"gs://{gcs_store.bucket_name}/{file_path}"
+        else:
+            gcs_path = file_path
+        
+        # Initialize BigQuery client
+        bq_client = BigQueryClient()
+        bq_client.create_tables()  # Ensure tables exist
+        
+        # Process the file
+        result = bq_client.process_gcs_file(gcs_path, force_reprocess)
+        
+        if result['status'] == 'success':
+            return jsonify({
+                'status': 'success',
+                'message': f'Successfully processed {file_path}',
+                'result': result
+            })
+        elif result['status'] == 'skipped':
+            return jsonify({
+                'status': 'skipped',
+                'message': f'File {file_path} was already processed',
+                'result': result
+            })
+        else:
+            return jsonify({
+                'status': 'failed',
+                'message': f'Failed to process {file_path}',
+                'result': result
+            }), 400
+            
+    except Exception as e:
+        logger.error(f"Error syncing single file to BigQuery: {str(e)}")
+        return jsonify({
+            'error': 'Failed to sync file to BigQuery',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/bigquery/stats')
+def get_bigquery_stats():
+    """Get BigQuery processing statistics"""
+    try:
+        days = int(request.args.get('days', 7))
+        
+        bq_client = BigQueryClient()
+        stats = bq_client.get_processing_stats(days)
+        
+        return jsonify(stats)
+        
+    except Exception as e:
+        logger.error(f"Error getting BigQuery stats: {str(e)}")
+        return jsonify({
+            'error': 'Failed to get BigQuery stats',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/bigquery/query', methods=['POST'])
+def query_bigquery():
+    """Execute a custom BigQuery query"""
+    try:
+        data = request.get_json()
+        if not data or 'query' not in data:
+            return jsonify({
+                'error': 'Query is required',
+                'message': 'Please provide a query in the request body'
+            }), 400
+        
+        query = data['query']
+        limit = data.get('limit', 100)
+        
+        # Basic security check - only allow SELECT queries
+        if not query.strip().upper().startswith('SELECT'):
+            return jsonify({
+                'error': 'Only SELECT queries are allowed',
+                'message': 'For security reasons, only SELECT queries are permitted'
+            }), 400
+        
+        # Add LIMIT if not present
+        if 'LIMIT' not in query.upper():
+            query += f" LIMIT {limit}"
+        
+        bq_client = BigQueryClient()
+        job = bq_client.client.query(query)
+        results = job.result()
+        
+        # Convert results to list of dictionaries
+        rows = []
+        for row in results:
+            rows.append(dict(row))
+        
+        return jsonify({
+            'status': 'success',
+            'row_count': len(rows),
+            'rows': rows,
+            'query': query
+        })
+        
+    except Exception as e:
+        logger.error(f"Error executing BigQuery query: {str(e)}")
+        return jsonify({
+            'error': 'Failed to execute query',
             'message': str(e)
         }), 500
 
