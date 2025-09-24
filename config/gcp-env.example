@@ -1,0 +1,14 @@
+# GCP Configuration for lit-llmed
+# Copy this file to gcp-env.env and fill in your actual values
+
+# GCP Project Configuration
+GCP_PROJECT_ID=your-project-id
+GCP_REGION=us-central1
+GCP_SERVICE_NAME=lit-llmed-gcp
+
+# Application Configuration
+ENV=production
+PORT=8080
+
+# Optional: Add any API keys or service account paths here
+# GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
