@@ -9,7 +9,7 @@ from pathlib import Path
 from google.cloud import storage
 from google.cloud.exceptions import NotFound
 
-from src.core.log import get_logger
+from src.gcp.simple_logger import get_logger
 from src.core.models import Article
 
 LOGGER = get_logger(__name__)

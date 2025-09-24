@@ -11,8 +11,8 @@ import logging
 sys.path.append('/app')
 
 from src.core.models import Journal, Article
-from src.jobs.fetch import FetchJob
 from src.gcp.gcs_storage import GCSStore
+from src.gcp.gcp_fetch import GCPCrossrefClient
 
 app = Flask(__name__)
 
@@ -149,11 +149,14 @@ def fetch_literature():
             )
         ]
         
-        # Initialize fetch job
-        fetch_job = FetchJob(email, rate_limit_delay=1.0, max_workers=3)
+        # Initialize GCP fetch client
+        fetch_client = GCPCrossrefClient(email, rate_limit_delay=1.0)
         
-        # Fetch articles
-        results = fetch_job.fetch_all(journals)
+        # Fetch articles for each journal
+        results = {}
+        for journal in journals:
+            articles = fetch_client.fetch_latest(journal)
+            results[journal.issn] = articles
         
         # Initialize GCS storage
         gcs_store = GCSStore()
@@ -266,8 +269,8 @@ def fetch_single_journal(issn: str):
         )
         
         # Fetch articles
-        fetch_job = FetchJob(email, rate_limit_delay=1.0)
-        articles = fetch_job.fetch_single(journal)
+        fetch_client = GCPCrossrefClient(email, rate_limit_delay=1.0)
+        articles = fetch_client.fetch_latest(journal)
         
         # Upload to GCS
         if articles:
