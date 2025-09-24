@@ -81,7 +81,7 @@ jobs:
           --min-instances 0 \
           --port 8080 \
           --service-account github-actions-deploy@$PROJECT_ID.iam.gserviceaccount.com \
-          --set-env-vars ENV=production,GITHUB_SHA=$GITHUB_SHA
+          --set-env-vars ENV=production,GITHUB_SHA=$GITHUB_SHA,GCS_BUCKET_NAME=${{ secrets.GCS_BUCKET_NAME }},FETCHER_EMAIL=${{ secrets.FETCHER_EMAIL }}
 
     - name: Get service URL
       run: |

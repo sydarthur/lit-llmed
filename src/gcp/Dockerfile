@@ -4,10 +4,12 @@ WORKDIR /app
 
 # Copy requirements and install dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY src/gcp/requirements.txt ./gcp-requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir -r gcp-requirements.txt
 
-# Copy application code
-COPY src/gcp/ ./src/gcp/
+# Copy all source code for imports
+COPY src/ ./src/
 
 # Create non-root user for security
 RUN groupadd -r appgroup && useradd -r -g appgroup appuser

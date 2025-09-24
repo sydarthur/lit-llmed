@@ -16,6 +16,19 @@ Service Account JSON key with the following permissions:
 - Storage Admin  
 - Artifact Registry Administrator
 - Artifact Registry Create on Push Admin
+- Service Account User
+
+### 3. GCS_BUCKET_NAME
+Google Cloud Storage bucket name for storing literature data
+```
+your-bucket-name-lit-llmed
+```
+
+### 4. FETCHER_EMAIL
+Email address for API requests (required by Crossref/OpenAlex)
+```
+your-email@domain.com
+```
 
 ## Creating the Service Account
 
