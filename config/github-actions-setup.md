@@ -14,7 +14,8 @@ your-gcp-project-id
 Service Account JSON key with the following permissions:
 - Cloud Run Admin
 - Storage Admin  
-- Artifact Registry Administrator (or Container Registry Service Agent)
+- Artifact Registry Administrator
+- Artifact Registry Create on Push Admin
 
 ## Creating the Service Account
 
@@ -24,6 +25,7 @@ Service Account JSON key with the following permissions:
    - Cloud Run Admin
    - Storage Admin
    - Artifact Registry Administrator
+   - Artifact Registry Create on Push Admin
 4. Create and download JSON key
 5. Copy the entire JSON content to GitHub secret `GCP_SA_KEY`
 

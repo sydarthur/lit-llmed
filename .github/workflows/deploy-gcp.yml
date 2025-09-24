@@ -80,6 +80,7 @@ jobs:
           --max-instances 10 \
           --min-instances 0 \
           --port 8080 \
+          --service-account github-actions-deploy@$PROJECT_ID.iam.gserviceaccount.com \
           --set-env-vars ENV=production,GITHUB_SHA=$GITHUB_SHA
 
     - name: Get service URL
