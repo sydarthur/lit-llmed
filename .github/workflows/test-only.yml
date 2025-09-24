@@ -33,6 +33,5 @@ jobs:
 
     - name: Test Docker build
       run: |
-        cd src/gcp
-        docker build -t test-image .
+        docker build -f src/gcp/Dockerfile -t test-image .
         echo "✅ Docker build successful"

@@ -60,8 +60,7 @@ jobs:
 
     - name: Build Docker image
       run: |
-        cd src/gcp
-        docker build -t gcr.io/$PROJECT_ID/$SERVICE_NAME:$GITHUB_SHA .
+        docker build -f src/gcp/Dockerfile -t gcr.io/$PROJECT_ID/$SERVICE_NAME:$GITHUB_SHA .
         docker tag gcr.io/$PROJECT_ID/$SERVICE_NAME:$GITHUB_SHA gcr.io/$PROJECT_ID/$SERVICE_NAME:latest
 
     - name: Push Docker image to GCR
