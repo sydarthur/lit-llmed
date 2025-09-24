@@ -14,6 +14,7 @@ from src.core.models import Journal, Article
 from src.gcp.gcs_storage import GCSStore
 from src.gcp.gcp_fetch import GCPCrossrefClient
 from src.gcp.bq_client import BigQueryClient
+from src.gcp.simple_bq_insert import simple_insert_articles
 
 app = Flask(__name__)
 
@@ -526,6 +527,59 @@ def query_bigquery():
         logger.error(f"Error executing BigQuery query: {str(e)}")
         return jsonify({
             'error': 'Failed to execute query',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/bigquery/debug-insert', methods=['POST'])
+def debug_insert():
+    """Debug endpoint to test simple BigQuery insertion."""
+    try:
+        data = request.get_json() or {}
+        file_path = data.get('file_path', 'data/journal_of_business_logistics_20250924_005832.json')
+        
+        # Download file from GCS
+        gcs_store = GCSStore()
+        content = gcs_store.download_file(file_path)
+        
+        # Parse articles
+        articles_data = json.loads(content)
+        if not isinstance(articles_data, list):
+            articles_data = [articles_data]
+        
+        articles = []
+        for article_dict in articles_data:
+            try:
+                article = Article(**article_dict)
+                articles.append(article)
+            except Exception as e:
+                logger.warning(f"Failed to parse article: {str(e)}")
+                continue
+        
+        if not articles:
+            return jsonify({
+                'status': 'error',
+                'message': 'No valid articles found'
+            }), 400
+        
+        # Try simple insert
+        success = simple_insert_articles(articles)
+        
+        if success:
+            return jsonify({
+                'status': 'success',
+                'message': f'Successfully inserted {len(articles)} articles using debug method',
+                'articles_count': len(articles)
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Debug insert failed'
+            }), 500
+            
+    except Exception as e:
+        logger.error(f"Debug insert error: {str(e)}")
+        return jsonify({
+            'error': 'Debug insert failed',
             'message': str(e)
         }), 500
 
