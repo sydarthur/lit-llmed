@@ -25,6 +25,7 @@ MANIFEST
 
 # Virtual Environment
 venv/
+.venv/
 env/
 ENV/
 env.bak/
@@ -76,3 +77,11 @@ dmypy.json
 /lit-api/output
 /output
 lit-api/config/zotero_config.json
+
+# Zotero credentials (sensitive)
+config/zotero.json
+
+# Helper/test scripts (optional - comment out if you want to commit them)
+check_zotero_item.py
+get_zotero_info.py
+search_zotero.py
