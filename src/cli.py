@@ -12,6 +12,7 @@ from src.core.models import Journal
 from src.core.store import ConfigStore
 from src.jobs.fetch import FetchJob
 from src.jobs.scheduler import LiteratureScheduler, SchedulerConfig
+from src.sync import SyncManager
 
 app = typer.Typer(help="Fetch and enrich journal metadata from Crossref.")
 LOGGER = get_logger(__name__)
@@ -167,6 +168,90 @@ def toggle_journal(ctx: typer.Context, issn: str = typer.Argument(...)) -> None:
     config_store.save_journals(journals)
     status = "active" if any(journal.issn == issn and journal.active for journal in journals) else "inactive"
     typer.echo(f"Journal {issn} toggled to {status}")
+
+
+# Obsidian-Zotero sync commands
+sync_app = typer.Typer(help="Sync Obsidian notes to Zotero")
+app.add_typer(sync_app, name="sync")
+
+
+@sync_app.command("vault")
+def sync_vault(
+    ctx: typer.Context,
+    vault_path: Path = typer.Argument(..., help="Path to Obsidian vault"),
+    folder: Optional[str] = typer.Option(None, help="Specific folder to sync (e.g., 'Labs/Literature')"),
+    dry_run: bool = typer.Option(False, help="Preview sync without making changes"),
+    watch: bool = typer.Option(False, help="Watch for changes and auto-sync"),
+) -> None:
+    """Sync Obsidian notes to Zotero library."""
+    config_store: ConfigStore = ctx.obj["config_store"]
+    zotero_config = config_store.load_zotero()
+
+    if not zotero_config or zotero_config.get("api_key") == "YOUR_ZOTERO_API_KEY":
+        typer.echo("❌ Please configure config/zotero.json with valid credentials")
+        raise typer.Exit(1)
+
+    manager = SyncManager(
+        vault_path=vault_path,
+        api_key=zotero_config["api_key"],
+        user_id=zotero_config["user_id"],
+        library_type=zotero_config.get("library_type", "user"),
+        auto_sync=watch,
+        dry_run=dry_run,
+    )
+
+    if watch:
+        typer.echo(f"👀 Watching {vault_path / folder if folder else vault_path}")
+        typer.echo("   Press Ctrl+C to stop...")
+        manager.start_watch(folder=folder)
+    else:
+        typer.echo(f"🔄 Syncing {vault_path / folder if folder else vault_path}")
+        if dry_run:
+            typer.echo("   (DRY RUN - no changes will be made)")
+        results = manager.sync_vault(folder=folder)
+        typer.echo(f"\n📊 Results:")
+        typer.echo(f"   Total: {results['total']}")
+        typer.echo(f"   Synced: {results['synced']}")
+        typer.echo(f"   Skipped: {results['skipped']}")
+        typer.echo(f"   Failed: {results['failed']}")
+
+
+@sync_app.command("file")
+def sync_file(
+    ctx: typer.Context,
+    file_path: Path = typer.Argument(..., help="Path to Obsidian note file"),
+    dry_run: bool = typer.Option(False, help="Preview sync without making changes"),
+) -> None:
+    """Sync a single Obsidian note to Zotero."""
+    config_store: ConfigStore = ctx.obj["config_store"]
+    zotero_config = config_store.load_zotero()
+
+    if not zotero_config or zotero_config.get("api_key") == "YOUR_ZOTERO_API_KEY":
+        typer.echo("❌ Please configure config/zotero.json with valid credentials")
+        raise typer.Exit(1)
+
+    # Get vault path from file path (go up to find vault root)
+    vault_path = file_path.parent
+
+    manager = SyncManager(
+        vault_path=vault_path,
+        api_key=zotero_config["api_key"],
+        user_id=zotero_config["user_id"],
+        library_type=zotero_config.get("library_type", "user"),
+        dry_run=dry_run,
+    )
+
+    typer.echo(f"🔄 Syncing {file_path}")
+    if dry_run:
+        typer.echo("   (DRY RUN - no changes will be made)")
+
+    success = manager.sync_file(file_path)
+
+    if success:
+        typer.echo("✅ Sync successful!")
+    else:
+        typer.echo("❌ Sync failed or skipped")
+        raise typer.Exit(1)
 
 
 if __name__ == "__main__":
