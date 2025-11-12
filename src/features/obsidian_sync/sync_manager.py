@@ -10,8 +10,8 @@ from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
 from src.core.log import get_logger
-from src.sync.obsidian_parser import ObsidianNoteParser
-from src.sync.zotero_sync import ZoteroNoteSyncer
+from src.features.obsidian_sync.obsidian_parser import ObsidianNoteParser
+from src.features.obsidian_sync.zotero_sync import ZoteroNoteSyncer
 
 LOGGER = get_logger(__name__)
 

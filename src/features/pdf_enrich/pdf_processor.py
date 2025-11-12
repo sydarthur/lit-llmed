@@ -9,8 +9,8 @@ from typing import Dict, Optional
 import pdfplumber
 
 from src.core.log import get_logger
-from src.enrich.llm import OllamaLLM
-from src.enrich.settings import EnrichmentPaths, resolve_paths
+from src.features.pdf_enrich.llm import OllamaLLM
+from src.features.pdf_enrich.settings import EnrichmentPaths, resolve_paths
 
 LOGGER = get_logger(__name__)
 

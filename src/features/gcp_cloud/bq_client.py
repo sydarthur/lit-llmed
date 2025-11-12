@@ -11,8 +11,8 @@ from google.cloud.exceptions import NotFound
 from google.cloud.bigquery import LoadJobConfig, WriteDisposition
 
 from src.core.models import Article
-from src.gcp.simple_logger import get_logger
-from src.gcp.gcs_storage import GCSStore
+from src.features.gcp_cloud.simple_logger import get_logger
+from src.features.gcp_cloud.gcs_storage import GCSStore
 
 logger = get_logger(__name__)
 

@@ -11,10 +11,10 @@ import logging
 sys.path.append('/app')
 
 from src.core.models import Journal, Article
-from src.gcp.gcs_storage import GCSStore
-from src.gcp.gcp_fetch import GCPCrossrefClient
-from src.gcp.bq_client import BigQueryClient
-from src.gcp.simple_bq_insert import simple_insert_articles
+from src.features.gcp_cloud.gcs_storage import GCSStore
+from src.features.gcp_cloud.gcp_fetch import GCPCrossrefClient
+from src.features.gcp_cloud.bq_client import BigQueryClient
+from src.features.gcp_cloud.simple_bq_insert import simple_insert_articles
 
 app = Flask(__name__)
 

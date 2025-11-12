@@ -1,4 +1,4 @@
-from src.enrich.prompts import DEFAULT_TEMPLATE, get_paper_template, get_abstract_template
+from src.features.pdf_enrich.prompts import DEFAULT_TEMPLATE, get_paper_template, get_abstract_template
 
 
 def test_get_paper_template_known_type():

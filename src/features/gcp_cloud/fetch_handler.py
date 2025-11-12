@@ -6,7 +6,7 @@ from typing import Dict, List, Optional
 import requests
 
 from src.core.models import Article, Author, Journal, OpenAccess
-from src.gcp.simple_logger import get_logger
+from src.features.gcp_cloud.simple_logger import get_logger
 
 logger = get_logger(__name__)
 

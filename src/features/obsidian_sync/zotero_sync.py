@@ -7,7 +7,7 @@ from typing import List, Optional
 import requests
 
 from src.core.log import get_logger
-from src.sync.obsidian_parser import ObsidianNote
+from src.features.obsidian_sync.obsidian_parser import ObsidianNote
 
 LOGGER = get_logger(__name__)
 

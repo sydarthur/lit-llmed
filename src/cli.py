@@ -10,9 +10,9 @@ import typer
 from src.core.log import configure_logging, get_logger
 from src.core.models import Journal
 from src.core.store import ConfigStore
-from src.jobs.fetch import FetchJob
-from src.jobs.scheduler import LiteratureScheduler, SchedulerConfig
-from src.sync import SyncManager
+from src.features.journal_fetch.fetch_job import FetchJob
+from src.features.journal_fetch.scheduler import LiteratureScheduler, SchedulerConfig
+from src.features.obsidian_sync import SyncManager
 
 app = typer.Typer(help="Fetch and enrich journal metadata from Crossref.")
 LOGGER = get_logger(__name__)

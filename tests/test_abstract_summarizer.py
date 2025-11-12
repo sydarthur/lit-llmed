@@ -2,8 +2,8 @@ import json
 from pathlib import Path
 
 from src.core.models import Article
-from src.enrich.abstract_summarizer import AbstractSummarizer
-from src.enrich.settings import EnrichmentPaths
+from src.features.pdf_enrich.abstract_summarizer import AbstractSummarizer
+from src.features.pdf_enrich.settings import EnrichmentPaths
 
 
 class DummyLLM:

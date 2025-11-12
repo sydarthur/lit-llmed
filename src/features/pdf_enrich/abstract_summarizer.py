@@ -9,9 +9,9 @@ from typing import Dict, Iterable, List, Optional
 
 from src.core.log import get_logger
 from src.core.models import Article
-from src.enrich.llm import OllamaLLM
-from src.enrich.prompts import get_abstract_template
-from src.enrich.settings import EnrichmentPaths, resolve_paths
+from src.features.pdf_enrich.llm import OllamaLLM
+from src.features.pdf_enrich.prompts import get_abstract_template
+from src.features.pdf_enrich.settings import EnrichmentPaths, resolve_paths
 
 LOGGER = get_logger(__name__)
 

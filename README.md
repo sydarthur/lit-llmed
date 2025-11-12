@@ -9,7 +9,16 @@ Modernized tooling for fetching, enriching, and exporting scholarly articles fro
 ├─ config/
 │  ├─ journals.json        # Journal sources & ingest settings
 │  ├─ settings.toml        # Global knobs (paths, batching, limits)
-│  └─ zotero.json          # Optional Zotero credentials (keep secrets out of Git)
+│  ├─ zotero.json          # Zotero credentials (keep secrets out of Git)
+│  ├─ gcp/                 # GCP deployment configs
+│  │  ├─ cloudrun.yaml
+│  │  ├─ gcp-config.yaml
+│  │  ├─ gcp-env.example
+│  │  └─ bigquery-schema.sql
+│  └─ docs/                # Config documentation
+│      ├─ bigquery-api-guide.md
+│      ├─ github-actions-setup.md
+│      └─ deploy.sh
 ├─ output/
 │  ├─ cache/               # HTTP cache (future use)
 │  ├─ data/                # Content-addressed JSON payloads
@@ -21,37 +30,48 @@ Modernized tooling for fetching, enriching, and exporting scholarly articles fro
 │  │  └─ ris/              # RIS exports for reference managers
 │  ├─ files/pdf/           # Placeholder for future PDF storage
 │  └─ logs/                # JSON logs per run
-├─ pdfs_input/             # Drop PDFs here for LLM summarisation workflows
 ├─ src/
-│  ├─ core/                # Models, persistence helpers, logging
-│  │  ├─ log.py
+│  ├─ core/                # Shared utilities (models, storage, logging)
 │  │  ├─ models.py
-│  │  └─ store.py
-│  ├─ ingest/
-│  │  └─ crossref.py       # Crossref + OpenAlex + Unpaywall ingestion
-│  ├─ enrich/
-│  │  ├─ chunked_processor.py
-│  │  ├─ abstract_summarizer.py
-│  │  ├─ llm.py
-│  │  ├─ multi_folder_processor.py
-│  │  ├─ pdf_processor.py
-│  │  ├─ prompts.py
-│  │  └─ settings.py
-│  ├─ integrate/
-│  │  └─ zotero.py         # Zotero API client
-│  ├─ sync/                # Obsidian-Zotero bidirectional sync
-│  │  ├─ obsidian_parser.py
-│  │  ├─ zotero_sync.py
-│  │  ├─ sync_manager.py
-│  │  └─ README.md         # Sync documentation
-│  ├─ jobs/
-│  │  ├─ digest.py         # Placeholder for future enrichment workflows
-│  │  ├─ fetch.py          # Fetch orchestration & exports
-│  │  ├─ scheduler.py      # Lightweight scheduling loop
-│  │  └─ sync_zotero.py    # Placeholder for Zotero sync job
-│  └─ cli.py               # Typer-based CLI
-├─ tests/                  # Pytest suite covering core utilities
-├─ .env.example            # Suggested environment variables
+│  │  ├─ store.py
+│  │  └─ log.py
+│  ├─ features/            # Feature modules organized by domain
+│  │  ├─ journal_fetch/    # Crossref/OpenAlex/Unpaywall ingestion
+│  │  │  ├─ crossref_client.py
+│  │  │  ├─ fetch_job.py
+│  │  │  └─ scheduler.py
+│  │  ├─ pdf_enrich/       # LLM-based PDF enrichment
+│  │  │  ├─ abstract_summarizer.py
+│  │  │  ├─ pdf_processor.py
+│  │  │  ├─ chunked_processor.py
+│  │  │  ├─ multi_folder_processor.py
+│  │  │  ├─ llm.py
+│  │  │  ├─ prompts.py
+│  │  │  └─ settings.py
+│  │  ├─ obsidian_sync/    # Obsidian-Zotero bidirectional sync
+│  │  │  ├─ obsidian_parser.py
+│  │  │  ├─ zotero_sync.py
+│  │  │  ├─ sync_manager.py
+│  │  │  ├─ zotero_client.py
+│  │  │  └─ README.md
+│  │  └─ gcp_cloud/        # GCP Cloud Run deployment
+│  │      ├─ app.py
+│  │      ├─ bq_client.py
+│  │      ├─ gcs_storage.py
+│  │      ├─ fetch_handler.py
+│  │      └─ Dockerfile
+│  └─ cli.py               # Typer-based CLI entry
+├─ scripts/                # Helper and test scripts
+│  ├─ test_zotero.py
+│  ├─ check_zotero_item.py
+│  ├─ get_zotero_info.py
+│  ├─ search_zotero.py
+│  └─ test_obsidian_sync.py
+├─ docs/                   # Documentation
+│  ├─ OBSIDIAN_SYNC_GUIDE.md
+│  └─ SYNC_SUMMARY.md
+├─ tests/                  # Pytest suite
+├─ .env.example
 ├─ requirements.txt
 └─ README.md
 ```
@@ -111,7 +131,7 @@ Bidirectional synchronization between Obsidian literature notes and Zotero libra
 
 ```bash
 # Test Zotero connection
-python test_zotero.py
+python scripts/test_zotero.py
 
 # Dry run (preview without changes)
 python -m src.cli sync vault /path/to/vault --folder Literature --dry-run
@@ -130,7 +150,7 @@ python -m src.cli sync vault /path/to/vault --folder Literature --watch
 - Auto-watch mode for continuous sync
 - Notes synced back to Obsidian on re-import
 
-See [OBSIDIAN_SYNC_GUIDE.md](OBSIDIAN_SYNC_GUIDE.md) for complete setup instructions and [src/sync/README.md](src/sync/README.md) for technical documentation.
+See [docs/OBSIDIAN_SYNC_GUIDE.md](docs/OBSIDIAN_SYNC_GUIDE.md) for complete setup instructions and [src/features/obsidian_sync/README.md](src/features/obsidian_sync/README.md) for technical documentation.
 
 ## Abstract Summaries
 
@@ -139,7 +159,7 @@ To transform stored article JSON into structured abstract summaries, use the `Ab
 ```bash
 python - <<'PY'
 from pathlib import Path
-from src.enrich.abstract_summarizer import AbstractSummarizer
+from src.features.pdf_enrich.abstract_summarizer import AbstractSummarizer
 
 summarizer = AbstractSummarizer()
 summarizer.summarise_json_file(Path("output/data/all_journals_20240101.json"))

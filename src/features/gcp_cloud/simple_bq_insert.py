@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from typing import List, Dict, Any
 from google.cloud import bigquery
 from src.core.models import Article
-from src.gcp.simple_logger import get_logger
+from src.features.gcp_cloud.simple_logger import get_logger
 
 logger = get_logger(__name__)
 

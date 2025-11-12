@@ -12,7 +12,7 @@ import schedule
 
 from src.core.log import get_logger
 from src.core.store import ConfigStore, ContentStore
-from src.jobs.fetch import FetchJob
+from src.features.journal_fetch.fetch_job import FetchJob
 
 LOGGER = get_logger(__name__)
 

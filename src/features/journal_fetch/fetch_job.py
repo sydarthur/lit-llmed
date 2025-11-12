@@ -10,8 +10,8 @@ from typing import Dict, Iterable, List, Optional
 from src.core.log import get_logger
 from src.core.models import Article, Journal
 from src.core.store import ConfigStore, ContentStore
-from src.ingest.crossref import CrossrefClient
-from src.integrate.zotero import ZoteroClient
+from src.features.journal_fetch.crossref_client import CrossrefClient
+from src.features.obsidian_sync.zotero_client import ZoteroClient
 
 LOGGER = get_logger(__name__)
 
