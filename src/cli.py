@@ -10,7 +10,10 @@ import typer
 from src.core.log import configure_logging, get_logger
 from src.core.models import Journal
 from src.core.store import ConfigStore
-from src.features.journal_fetch.fetch_job import FetchJob
+from src.features.journal_fetch.fetch_job import (
+    FetchJob,
+    fetch_historic_data,
+)
 from src.features.journal_fetch.scheduler import LiteratureScheduler, SchedulerConfig
 from src.features.obsidian_sync import SyncManager
 
@@ -58,17 +61,52 @@ def fetch_all(
     email: str = typer.Option(..., help="Contact email for API usage"),
     csv: bool = typer.Option(True, help="Export combined CSV"),
     ris: bool = typer.Option(True, help="Export combined RIS"),
+    markdown: bool = typer.Option(True, help="Generate Markdown digest"),
     zotero: bool = typer.Option(False, help="Push articles directly to Zotero"),
 ) -> None:
     """Fetch all active journals and produce exports."""
     config_store: ConfigStore = ctx.obj["config_store"]
     job = FetchJob(email, config_store=config_store)
-    summary = job.run_full_fetch(export_csv=csv, export_ris=ris, export_zotero=zotero)
-    typer.echo(f"Fetched {summary['total_articles']} articles across {summary['journals_fetched']} journals")
+    summary = job.run_full_fetch(
+        export_csv=csv,
+        export_ris=ris,
+        export_markdown=markdown,
+        export_zotero=zotero
+    )
+    _print_summary(summary)
+
+
+@app.command("fetch-historic")
+def fetch_historic(
+    ctx: typer.Context,
+    days_back: int = typer.Option(..., help="Number of days to look back"),
+    email: str = typer.Option(..., help="Contact email for API usage"),
+    csv: bool = typer.Option(True, help="Export combined CSV"),
+    ris: bool = typer.Option(True, help="Export combined RIS"),
+    markdown: bool = typer.Option(True, help="Generate Markdown digest"),
+) -> None:
+    """Fetch historic articles for all active journals."""
+    config_store: ConfigStore = ctx.obj["config_store"]
+    summary = fetch_historic_data(
+        email,
+        days_back=days_back,
+        config_store=config_store,
+        export_csv=csv,
+        export_ris=ris,
+        export_markdown=markdown,
+    )
+    _print_summary(summary)
+
+
+def _print_summary(summary: dict) -> None:
+    """Helper to print fetch summary."""
+    typer.echo(f"Fetched {summary.get('total_articles', 0)} articles")
     if csv_path := summary.get("csv_file"):
         typer.echo(f"CSV export: {csv_path}")
     if ris_path := summary.get("ris_file"):
         typer.echo(f"RIS export: {ris_path}")
+    if md_path := summary.get("markdown_file"):
+        typer.echo(f"Markdown Digest: {md_path}")
     if zotero_status := summary.get("zotero_import"):
         typer.echo(f"Zotero: {zotero_status}")
 

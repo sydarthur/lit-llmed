@@ -43,10 +43,87 @@ class CrossrefClient:
         include_abstracts = journal.fetch_abstracts if include_abstracts is None else include_abstracts
         include_open_access = journal.fetch_oa_links if include_open_access is None else include_open_access
 
-        raw_items = self._crossref_latest(journal.issn, rows=rows, days_back=days_back)
+        raw_items = self._fetch_crossref_works(
+            filter_str=f"issn:{journal.issn},type:journal-article,from-pub-date:{self._get_since_date(days_back)}",
+            rows=rows,
+        )
+        return self._process_items(raw_items, journal, include_abstracts, include_open_access)
+
+    def fetch_by_date_range(
+        self,
+        journal: Journal,
+        start_date: str,
+        end_date: str,
+        *,
+        rows: int = 100,
+        include_abstracts: bool = False,
+        include_open_access: bool = True,
+    ) -> List[Article]:
+        """Fetch articles for a specific date range (YYYY-MM-DD)."""
+        raw_items = self._fetch_crossref_works(
+            filter_str=f"issn:{journal.issn},type:journal-article,from-pub-date:{start_date},until-pub-date:{end_date}",
+            rows=rows,
+        )
+        return self._process_items(raw_items, journal, include_abstracts, include_open_access)
+
+    def _get_since_date(self, days_back: int) -> str:
+        return (datetime.utcnow() - timedelta(days=days_back)).strftime("%Y-%m-%d")
+
+    def _fetch_crossref_works(
+        self,
+        filter_str: str,
+        rows: int,
+        extra_params: Optional[Dict] = None,
+    ) -> List[Dict]:
+        """Generic fetcher for Crossref works."""
+        params = {
+            "filter": filter_str,
+            "sort": "published",
+            "order": "desc",
+            "rows": rows,
+        }
+        if extra_params:
+            params.update(extra_params)
+            
+        # If ISSN is not involved, the URL is just /works
+        # But wait, our base URL has {issn}. We need to adjust.
+        # If we are searching generally (e.g. author), we shouldn't target a specific journal endpoint.
+        # But _crossref_latest was using self.CROSSREF_URL which had {issn}.
+        
+        # Let's fix the URL handling.
+        base_url = "https://api.crossref.org/works"
+        
+        try:
+            response = self.session.get(base_url, params=params, timeout=30)
+            response.raise_for_status()
+            time.sleep(self.rate_limit_delay)
+            payload = response.json()
+            return payload.get("message", {}).get("items", [])
+        except requests.RequestException as exc:
+            LOGGER.error("crossref_fetch_failed", error=str(exc))
+            return []
+
+    def _process_items(
+        self,
+        raw_items: List[Dict],
+        journal: Journal,
+        include_abstracts: bool,
+        include_open_access: bool,
+    ) -> List[Article]:
         articles: List[Article] = []
         for item in raw_items:
-            article = self._parse_crossref_item(item, journal)
+            # For author search, the ISSN might be in the item
+            # We can try to extract the primary ISSN from the item if available
+            item_journal = journal
+            if journal.issn == "N/A" and "ISSN" in item:
+                # Create a specific journal context if we discovered one
+                issn_list = item.get("ISSN", [])
+                primary_issn = issn_list[0] if issn_list else "Unknown"
+                container_title = item.get("container-title", [])
+                name = container_title[0] if container_title else "Unknown Journal"
+                item_journal = Journal(name=name, issn=primary_issn, active=True)
+
+            article = self._parse_crossref_item(item, item_journal)
             if not article:
                 continue
             if include_abstracts and not article.abstract and article.doi:
@@ -58,27 +135,8 @@ class CrossrefClient:
                 if oa_url:
                     article.open_access = OpenAccess(url=oa_url)
             articles.append(article)
-        LOGGER.info("fetched_articles", count=len(articles), issn=journal.issn)
+        LOGGER.info("fetched_articles", count=len(articles), context=journal.name)
         return articles
-
-    def _crossref_latest(self, issn: str, rows: int, days_back: int) -> List[Dict]:
-        since_date = (datetime.utcnow() - timedelta(days=days_back)).strftime("%Y-%m-%d")
-        params = {
-            "filter": f"type:journal-article,from-pub-date:{since_date}",
-            "sort": "published",
-            "order": "desc",
-            "rows": rows,
-        }
-        url = self.CROSSREF_URL.format(issn=issn)
-        try:
-            response = self.session.get(url, params=params, timeout=30)
-            response.raise_for_status()
-            time.sleep(self.rate_limit_delay)
-            payload = response.json()
-            return payload.get("message", {}).get("items", [])
-        except requests.RequestException as exc:  # pragma: no cover - network failure path
-            LOGGER.error("crossref_fetch_failed", issn=issn, error=str(exc))
-            return []
 
     def _openalex_abstract(self, doi: str) -> Optional[str]:
         url = self.OPENALEX_URL.format(doi=doi)
