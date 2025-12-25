@@ -37,10 +37,29 @@ class ZoteroClient:
             return False
 
     def get_or_create_collection(self, name: str) -> Optional[str]:
-        key = self._find_collection(name)
-        if key:
-            return key
-        return self._create_collection(name)
+        """Get or create a collection, supporting nested paths like 'Parent/Child'."""
+        # Handle nested collections
+        if "/" in name:
+            parts = name.split("/")
+            parent_key = None
+
+            # Create/find each level of the hierarchy
+            for i, part in enumerate(parts):
+                full_path = "/".join(parts[:i+1])
+                key = self._find_collection_by_path(full_path, parent_key)
+                if not key:
+                    key = self._create_collection(part, parent_key)
+                    if not key:
+                        return None
+                parent_key = key
+
+            return parent_key
+        else:
+            # Simple collection (no nesting)
+            key = self._find_collection(name)
+            if key:
+                return key
+            return self._create_collection(name)
 
     def import_articles(self, articles: Iterable[Article], collection_key: Optional[str] = None) -> bool:
         payload = []
@@ -75,6 +94,7 @@ class ZoteroClient:
         return success > 0
 
     def _find_collection(self, name: str) -> Optional[str]:
+        """Find a collection by exact name match (no parent filtering)."""
         try:
             response = self.session.get(f"{self.base_url}/collections", timeout=30)
             response.raise_for_status()
@@ -85,11 +105,39 @@ class ZoteroClient:
             LOGGER.error("zotero_collection_lookup_failed", error=str(exc))
         return None
 
-    def _create_collection(self, name: str) -> Optional[str]:
+    def _find_collection_by_path(self, full_path: str, expected_parent_key: Optional[str]) -> Optional[str]:
+        """Find a collection by name and parent key."""
         try:
+            response = self.session.get(f"{self.base_url}/collections", timeout=30)
+            response.raise_for_status()
+            # Extract the last part of the path (the actual collection name)
+            name = full_path.split("/")[-1]
+
+            for collection in response.json():
+                data = collection.get("data", {})
+                coll_name = data.get("name")
+                parent_coll = data.get("parentCollection")
+
+                # Match by name and parent
+                if coll_name == name:
+                    if expected_parent_key is None and not parent_coll:
+                        return collection.get("key")
+                    elif expected_parent_key and parent_coll == expected_parent_key:
+                        return collection.get("key")
+        except requests.RequestException as exc:  # pragma: no cover
+            LOGGER.error("zotero_collection_lookup_failed", error=str(exc))
+        return None
+
+    def _create_collection(self, name: str, parent_key: Optional[str] = None) -> Optional[str]:
+        """Create a collection, optionally under a parent collection."""
+        try:
+            payload = {
+                "name": name,
+                "parentCollection": parent_key if parent_key else False
+            }
             response = self.session.post(
                 f"{self.base_url}/collections",
-                json=[{"name": name, "parentCollection": False}],
+                json=[payload],
                 headers={"Content-Type": "application/json"},
                 timeout=30,
             )

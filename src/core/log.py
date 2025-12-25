@@ -49,7 +49,34 @@ def configure_logging(level: str = "INFO") -> None:
             handler.setFormatter(_DEFAULT_FORMATTER)
 
 
-def get_logger(name: str) -> logging.Logger:
+class StructuredLogger:
+    """Wrapper around logging.Logger that supports structured logging with kwargs."""
+
+    def __init__(self, logger: logging.Logger):
+        self._logger = logger
+
+    def _log(self, level: int, msg: str, *args, **kwargs):
+        """Log with structured data passed as kwargs."""
+        if self._logger.isEnabledFor(level):
+            self._logger.log(level, msg, *args, extra=kwargs)
+
+    def debug(self, msg: str, *args, **kwargs):
+        self._log(logging.DEBUG, msg, *args, **kwargs)
+
+    def info(self, msg: str, *args, **kwargs):
+        self._log(logging.INFO, msg, *args, **kwargs)
+
+    def warning(self, msg: str, *args, **kwargs):
+        self._log(logging.WARNING, msg, *args, **kwargs)
+
+    def error(self, msg: str, *args, **kwargs):
+        self._log(logging.ERROR, msg, *args, **kwargs)
+
+    def critical(self, msg: str, *args, **kwargs):
+        self._log(logging.CRITICAL, msg, *args, **kwargs)
+
+
+def get_logger(name: str) -> StructuredLogger:
     if _DEFAULT_FORMATTER is None:
         configure_logging()
-    return logging.getLogger(name)
+    return StructuredLogger(logging.getLogger(name))

@@ -3,7 +3,7 @@
 
 import json
 from pathlib import Path
-from src.integrate.zotero import ZoteroClient
+from src.features.obsidian_sync.zotero_client import ZoteroClient
 from src.core.log import get_logger
 
 LOGGER = get_logger(__name__)
