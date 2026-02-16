@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 import re
 from collections import defaultdict
 from datetime import datetime
@@ -84,8 +85,8 @@ class MarkdownDigest:
         
         # Abstract (collapsible)
         if article.abstract:
-            # Simple cleanup of abstract text if needed
-            abstract_text = article.abstract.strip()
+            # Clean JATS XML tags and format text
+            abstract_text = self._clean_abstract(article.abstract)
             lines.append("<details>")
             lines.append("<summary><strong>Abstract</strong></summary>")
             lines.append("")
@@ -144,3 +145,20 @@ class MarkdownDigest:
     def _clean_str(self, text: str) -> str:
         """Remove non-alphanumeric characters."""
         return re.sub(r'[^a-zA-Z0-9]', '', text)
+
+    def _clean_abstract(self, text: str) -> str:
+        """Remove JATS XML tags and clean up abstract text."""
+        # Remove JATS XML tags while preserving content
+        # Pattern matches: <jats:tag>, </jats:tag>, <jats:tag attr="value">
+        cleaned = re.sub(r'</?jats:[^>]+>', '', text)
+
+        # Unescape HTML entities (&amp; -> &, &lt; -> <, etc.)
+        cleaned = html.unescape(cleaned)
+
+        # Clean up excessive whitespace
+        cleaned = re.sub(r'\s+', ' ', cleaned)
+
+        # Remove leading/trailing whitespace
+        cleaned = cleaned.strip()
+
+        return cleaned
